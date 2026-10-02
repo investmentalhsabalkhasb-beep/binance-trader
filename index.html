@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0B0E11">
+<title>Binance Trader</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0B0E11; --panel:#181A20; --panel2:#1E2329; --line:#2B3139;
+  --text:#EAECEF; --muted:#848E9C; --yellow:#FCD535; --green:#0ECB81; --red:#F6465D;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"IBM Plex Sans","IBM Plex Sans Arabic",system-ui,sans-serif;font-size:15px}
+body{min-height:100vh;display:flex;justify-content:center}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+.app{width:100%;max-width:520px;min-height:100vh;display:flex;flex-direction:column;position:relative}
+
+.top{position:sticky;top:0;z-index:20;background:var(--bg);display:flex;align-items:center;gap:10px;
+  padding:calc(10px + env(safe-area-inset-top)) 14px 10px;border-bottom:1px solid var(--line)}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--panel2) center/cover no-repeat;
+  border:1px solid var(--line);display:grid;place-items:center;font-weight:700;color:var(--yellow);flex:none}
+.uname{font-weight:600;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spacer{flex:1}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;
+  border:1px solid currentColor;white-space:nowrap}
+.badge i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.badge.test{color:var(--yellow)} .badge.live{color:var(--green)} .badge.off{color:var(--muted)}
+.langbtn{padding:6px 10px;border-radius:6px;background:var(--panel2);font-weight:600;font-size:13px}
+
+main{flex:1;padding:14px 14px calc(84px + env(safe-area-inset-bottom))}
+.tab{display:none}.tab.on{display:block}
+.card{background:var(--panel);border-radius:10px;padding:14px;margin-bottom:12px}
+.muted{color:var(--muted)} .up{color:var(--green)} .down{color:var(--red)}
+.num{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;display:inline-block}
+h2{font-size:15px;margin:0 0 10px;font-weight:600}
+
+.pair{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;padding:4px 8px 4px 4px;border-radius:8px;background:var(--panel2)}
+.pair svg{width:16px;height:16px;fill:var(--muted)}
+.price{font-size:34px;font-weight:700;margin:10px 0 2px;transition:color .25s}
+.price.flash-up{color:var(--green)} .price.flash-down{color:var(--red)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.stats div{font-size:12px;color:var(--muted)} .stats b{display:block;color:var(--text);font-size:13px;margin-top:2px}
+.seg{display:flex;gap:4px;background:var(--panel2);padding:3px;border-radius:8px}
+.seg button{flex:1;padding:7px 4px;border-radius:6px;font-size:13px;color:var(--muted);font-weight:500}
+.seg button.on{background:var(--line);color:var(--yellow)}
+.chartbox{position:relative;height:230px;margin-top:10px;direction:ltr}
+.field{display:block;margin-bottom:12px}
+.field span{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+.field input{width:100%;padding:12px;border-radius:8px;background:var(--panel2);border:1px solid var(--line)}
+.field input:focus{outline:none;border-color:var(--yellow)}
+.trade-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-buy,.btn-sell{padding:13px;border-radius:8px;font-weight:700;color:#fff}
+.btn-buy{background:var(--green)} .btn-sell{background:var(--red)}
+.btn-buy:disabled,.btn-sell:disabled{opacity:.5}
+.btn-main{width:100%;padding:13px;border-radius:8px;background:var(--yellow);color:#181A20;font-weight:700}
+.btn-main:disabled{opacity:.5}
+.quick{display:flex;gap:6px;margin-bottom:12px}
+.quick button{flex:1;padding:6px;border-radius:6px;background:var(--panel2);font-size:12px;color:var(--muted)}
+
+.search{width:100%;padding:12px;border-radius:8px;background:var(--panel);border:1px solid var(--line);margin-bottom:10px}
+.search:focus{outline:none;border-color:var(--yellow)}
+.row{display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-bottom:1px solid var(--line);width:100%;text-align:start}
+.row .l b{font-size:15px} .row .l small{color:var(--muted);margin-inline-start:4px}
+.row .l div{font-size:12px;color:var(--muted);margin-top:2px}
+.row .r{text-align:end}
+.chg{display:inline-block;min-width:74px;padding:6px 8px;border-radius:6px;text-align:center;font-weight:600;font-size:13px;color:#fff;margin-top:3px}
+.chg.up{background:var(--green)} .chg.down{background:var(--red)}
+.empty{padding:32px 12px;text-align:center;color:var(--muted)}
+.empty .btn-main{margin-top:14px;width:auto;padding:10px 22px}
+
+.total{font-size:30px;font-weight:700;margin:4px 0}
+.donutwrap{display:flex;align-items:center;gap:14px}
+.donutwrap .cv{width:130px;height:130px;flex:none;direction:ltr}
+.legend{flex:1;font-size:13px}
+.legend div{display:flex;align-items:center;gap:6px;margin:4px 0}
+.legend i{width:9px;height:9px;border-radius:50%;flex:none}
+
+.note{font-size:12px;color:var(--muted);line-height:1.7;margin:0 0 12px}
+.saved-hint{font-size:12px;color:var(--green);margin:-6px 0 12px}
+
+nav{position:fixed;bottom:0;width:100%;max-width:520px;background:var(--panel);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom);z-index:30}
+nav button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 8px;color:var(--muted);font-size:11.5px}
+nav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav button.on{color:var(--yellow)}
+
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:none;justify-content:center;align-items:flex-end}
+.sheet-bg.on{display:flex}
+.sheet{width:100%;max-width:520px;max-height:80vh;background:var(--bg);border-radius:14px 14px 0 0;padding:14px;display:flex;flex-direction:column}
+.sheet .list{overflow:auto;flex:1}
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;
+  background:var(--line);padding:11px 16px;border-radius:8px;z-index:60;max-width:90%;text-align:center;font-size:14px;transition:.25s;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.err{border:1px solid var(--red)} .toast.ok{border:1px solid var(--green)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="avatar" id="avatar"></div>
+    <div class="uname" id="uname"></div>
+    <div class="spacer"></div>
+    <span class="badge off" id="badge"><i></i><span id="badgeText"></span></span>
+    <button class="langbtn" id="langBtn" aria-label="Language"></button>
+  </header>
+
+  <main>
+    <section class="tab on" id="tab-trade">
+      <div class="card">
+        <button class="pair" id="pairBtn" aria-haspopup="dialog">
+          <span id="pairName">BTC/USDT</span>
+          <svg viewBox="0 0 16 16"><path d="M3 6l5 5 5-5z"/></svg>
+        </button>
+        <div class="price num" id="price">--</div>
+        <div><span class="num" id="chg">--</span></div>
+        <div class="stats">
+          <div><span data-i="high"></span><b class="num" id="hi">--</b></div>
+          <div><span data-i="low"></span><b class="num" id="lo">--</b></div>
+          <div><span data-i="vol"></span><b class="num" id="vol">--</b></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="seg" id="ivSeg">
+          <button data-iv="1m">1m</button><button data-iv="5m">5m</button>
+          <button data-iv="15m" class="on">15m</button><button data-iv="1h">1h</button>
+          <button data-iv="4h">4h</button><button data-iv="1d">1d</button>
+        </div>
+        <div class="chartbox"><canvas id="chart"></canvas></div>
+      </div>
+
+      <div class="card">
+        <label class="field">
+          <span data-i="amount"></span>
+          <input id="amt" type="number" inputmode="decimal" min="0" step="any" placeholder="10">
+        </label>
+        <div class="quick" id="quick">
+          <button data-a="10">10</button><button data-a="50">50</button>
+          <button data-a="100">100</button><button data-a="500">500</button>
+        </div>
+        <div class="trade-btns">
+          <button class="btn-buy" id="buyBtn" data-i="buy"></button>
+          <button class="btn-sell" id="sellBtn" data-i="sell"></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-markets">
+      <input class="search" id="mSearch" data-p="search" autocomplete="off">
+      <div id="mList"></div>
+    </section>
+
+    <section class="tab" id="tab-wallet">
+      <div id="walletBody"></div>
+    </section>
+
+    <section class="tab" id="tab-settings">
+      <div class="card">
+        <h2 data-i="api_keys"></h2>
+        <div class="seg" id="modeSeg" style="margin-bottom:14px">
+          <button data-m="test" class="on" data-i="test_acc"></button>
+          <button data-m="live" data-i="live_acc"></button>
+        </div>
+
+        <div id="form-test">
+          <p class="note" data-i="note_test"></p>
+          <label class="field"><span>Testnet API Key</span>
+            <input id="k-test" autocomplete="off" spellcheck="false" dir="ltr"></label>
+          <label class="field"><span>Testnet API Secret</span>
+            <input id="s-test" type="password" autocomplete="new-password" spellcheck="false" dir="ltr"></label>
+          <div class="saved-hint" id="hint-test"></div>
+        </div>
+
+        <div id="form-live" hidden>
+          <p class="note" data-i="note_live"></p>
+          <label class="field"><span>Live API Key</span>
+            <input id="k-live" autocomplete="off" spellcheck="false" dir="ltr"></label>
+          <label class="field"><span>Live API Secret</span>
+            <input id="s-live" type="password" autocomplete="new-password" spellcheck="false" dir="ltr"></label>
+          <div class="saved-hint" id="hint-live"></div>
+        </div>
+
+        <button class="btn-main" id="saveBtn" data-i="save"></button>
+      </div>
+    </section>
+  </main>
+
+  <nav>
+    <button data-tab="trade" class="on"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><span data-i="trade"></span></button>
+    <button data-tab="markets"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg><span data-i="markets"></span></button>
+    <button data-tab="wallet"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/></svg><span data-i="wallet"></span></button>
+    <button data-tab="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.6a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 0 0 2 1.2l.4 2.6h4l.4-2.6a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg><span data-i="settings"></span></button>
+  </nav>
+</div>
+
+<div class="sheet-bg" id="sheetBg">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <input class="search" id="sSearch" data-p="search" autocomplete="off">
+    <div class="list" id="sList"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = "";
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+const tg = window.Telegram && Telegram.WebApp;
+const INIT = tg ? tg.initData : "";
+const TG_USER = tg && tg.initDataUnsafe ? tg.initDataUnsafe.user : null;
+if(tg){
+  tg.ready(); tg.expand();
+  try { tg.setHeaderColor("#0B0E11"); tg.setBackgroundColor("#0B0E11"); } catch(e){}
+}
+const askConfirm = msg => new Promise(res =>
+  (tg && tg.showConfirm) ? tg.showConfirm(msg, res) : res(confirm(msg)));
+
+const I18N = {
+  ar: {
+    trade:"التداول", markets:"العملات", wallet:"المحفظة", settings:"الإعدادات",
+    buy:"شراء", sell:"بيع", amount:"المبلغ بـ USDT", search:"ابحث عن عملة...",
+    high:"الأعلى 24س", low:"الأدنى 24س", vol:"الحجم 24س",
+    total:"إجمالي الرصيد", dist:"التوزيع", free:"متاح", locked:"محجوز",
+    test_short:"تجريبي", live_short:"حقيقي", connected:"متصل", not_set:"غير مفعّل",
+    test_acc:"حساب تجريبي (Testnet)", live_acc:"حساب حقيقي (Live)",
+    api_keys:"مفاتيح API", save:"حفظ وتفعيل",
+    note_test:"أنشئ مفاتيح الاختبار من testnet.binance.vision. الأرصدة هناك وهمية.",
+    note_live:"تحذير: هذا حساب حقيقي وأوامرك تُنفَّذ بأموال فعلية. فعّل صلاحية Spot Trading فقط وعطّل السحب.",
+    saved_hint:"محفوظ:", saved_ok:"تم الحفظ والتفعيل", mode_on:"تم التبديل إلى النمط",
+    order_ok:"تم تنفيذ الأمر", need_amount:"أدخل مبلغاً صحيحاً",
+    confirm_live:"هذا حساب حقيقي. هل تريد تنفيذ أمر %s بقيمة %a USDT على %p؟",
+    no_keys:"أضف مفاتيح هذا النمط أولاً من الإعدادات", fill_both:"أدخل المفتاح والسر معاً",
+    wallet_empty:"لا توجد أرصدة لعرضها", go_settings:"الذهاب إلى الإعدادات",
+    network:"تعذّر الاتصال بالخادم", loading:"جارٍ التحميل..."
+  },
+  en: {
+    trade:"Trade", markets:"Markets", wallet:"Wallet", settings:"Settings",
+    buy:"Buy", sell:"Sell", amount:"Amount in USDT", search:"Search coins...",
+    high:"24h High", low:"24h Low", vol:"24h Volume",
+    total:"Total balance", dist:"Allocation", free:"Free", locked:"Locked",
+    test_short:"Testnet", live_short:"Live", connected:"Connected", not_set:"Not set",
+    test_acc:"Testnet account", live_acc:"Live account",
+    api_keys:"API keys", save:"Save & activate",
+    note_test:"Create test keys at testnet.binance.vision. Balances there are not real.",
+    note_live:"Warning: this is a real account and orders use real funds. Enable Spot Trading only and disable withdrawals.",
+    saved_hint:"Saved:", saved_ok:"Saved and activated", mode_on:"Switched to mode",
+    order_ok:"Order executed", need_amount:"Enter a valid amount",
+    confirm_live:"This is a LIVE account. Place a %s order worth %a USDT on %p?",
+    no_keys:"Add keys for this mode in Settings first", fill_both:"Enter both key and secret",
+    wallet_empty:"No balances to show", go_settings:"Go to Settings",
+    network:"Cannot reach the server", loading:"Loading..."
+  }
+};
+
+const S = {
+  lang: localStorage.getItem("lang") || ((TG_USER && TG_USER.language_code === "en") ? "en" : "ar"),
+  symbol: localStorage.getItem("symbol") || "BTCUSDT",
+  interval: localStorage.getItem("interval") || "15m",
+  tab: "trade", state: null, tickers: [],
+  formMode: "test", lastPrice: null, wallet: null
+};
+const t = k => (I18N[S.lang][k] ?? k);
+
+function fp(n){
+  n = +n; if(!isFinite(n)) return "--";
+  if(n >= 1000) return n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(n >= 1) return n.toFixed(4);
+  if(n >= 0.01) return n.toFixed(5);
+  return n.toFixed(8);
+}
+function fv(n){
+  n = +n;
+  if(n >= 1e9) return (n/1e9).toFixed(2)+"B";
+  if(n >= 1e6) return (n/1e6).toFixed(2)+"M";
+  if(n >= 1e3) return (n/1e3).toFixed(1)+"K";
+  return n.toFixed(0);
+}
+const money = n => (+n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const base = s => s.replace(/USDT$/,"");
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+let toastTimer;
+function toast(msg, kind){
+  const el = $("#toast"); el.textContent = msg; el.className = "toast on " + (kind || "");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.className = "toast", 3200);
+}
+
+async function api(path, opts){
+  opts = opts || {};
+  opts.headers = Object.assign({"X-Init-Data": INIT}, opts.headers || {});
+  let r, j = {};
+  try { r = await fetch(API_BASE.replace(/\/$/, "") + path, opts); j = await r.json().catch(() => ({})); }
+  catch(e){ throw new Error(t("network")); }
+  if(!r.ok){
+    const err = new Error(j.code === "no_keys" ? t("no_keys") : (j.error || r.statusText));
+    err.code = j.code; throw err;
+  }
+  return j;
+}
+const post = (p, body) => api(p, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body || {})});
+
+function applyLang(){
+  const rtl = S.lang === "ar";
+  document.documentElement.lang = S.lang;
+  document.documentElement.dir = rtl ? "rtl" : "ltr";
+  $$("[data-i]").forEach(el => el.textContent = t(el.dataset.i));
+  $$("[data-p]").forEach(el => el.placeholder = t(el.dataset.p));
+  $("#langBtn").textContent = rtl ? "EN" : "عربي";
+  renderBadge(); renderLists(); renderHints();
+  if(S.tab === "wallet") renderWallet();
+}
+$("#langBtn").onclick = () => {
+  S.lang = S.lang === "ar" ? "en" : "ar";
+  localStorage.setItem("lang", S.lang); applyLang();
+};
+
+function renderProfile(){
+  const name = TG_USER ? [TG_USER.first_name, TG_USER.last_name].filter(Boolean).join(" ") : "Trader";
+  $("#uname").textContent = name;
+  const a = $("#avatar");
+  if(TG_USER && TG_USER.photo_url){ a.style.backgroundImage = `url(${TG_USER.photo_url})`; a.textContent = ""; }
+  else a.textContent = name.trim().charAt(0).toUpperCase();
+}
+
+async function loadState(){
+  S.state = await api("/api/state");
+  S.formMode = S.state.mode; showForm(S.formMode);
+  renderBadge(); renderHints();
+}
+function renderBadge(){
+  const b = $("#badge"), st = S.state;
+  if(!st) return;
+  const ok = st.configured[st.mode];
+  b.className = "badge " + (ok ? st.mode : "off");
+  $("#badgeText").textContent = (st.mode === "test" ? t("test_short") : t("live_short")) + " · " + (ok ? t("connected") : t("not_set"));
+}
+function renderHints(){
+  if(!S.state) return;
+  for(const m of ["test","live"]){
+    $("#hint-"+m).textContent = S.state.configured[m] ? `${t("saved_hint")} ${S.state.hints[m]}` : "";
+  }
+}
+function showForm(m){
+  S.formMode = m;
+  $$("#modeSeg button").forEach(b => b.classList.toggle("on", b.dataset.m === m));
+  $("#form-test").hidden = m !== "test"; $("#form-live").hidden = m !== "live";
+}
+$("#modeSeg").onclick = async e => {
+  const b = e.target.closest("button"); if(!b) return;
+  showForm(b.dataset.m);
+  if(S.state.configured[b.dataset.m] && S.state.mode !== b.dataset.m){
+    try { S.state = await post("/api/mode", {mode:b.dataset.m}); renderBadge(); S.wallet = null;
+          toast(`${t("mode_on")}: ${b.dataset.m === "test" ? t("test_short") : t("live_short")}`, "ok"); }
+    catch(err){ toast(err.message, "err"); }
+  }
+};
+$("#saveBtn").onclick = async () => {
+  const m = S.formMode, key = $("#k-"+m).value.trim(), secret = $("#s-"+m).value.trim();
+  if(!key || !secret) return toast(t("fill_both"), "err");
+  const btn = $("#saveBtn"); btn.disabled = true;
+  try {
+    S.state = await post("/api/keys", {mode:m, key, secret});
+    $("#k-"+m).value = ""; $("#s-"+m).value = ""; S.wallet = null;
+    renderBadge(); renderHints(); toast(t("saved_ok"), "ok");
+  } catch(err){ toast(err.message, "err"); }
+  btn.disabled = false;
+};
+
+function go(tab){
+  S.tab = tab;
+  $$(".tab").forEach(x => x.classList.toggle("on", x.id === "tab-"+tab));
+  $$("nav button").forEach(x => x.classList.toggle("on", x.dataset.tab === tab));
+  window.scrollTo(0,0);
+  if(tab === "wallet") loadWallet();
+  if(tab === "trade") loadChart();
+  if(tab === "markets") renderLists();
+}
+$("nav").onclick = e => { const b = e.target.closest("button"); if(b) go(b.dataset.tab); };
+
+async function loadTickers(){
+  try { S.tickers = await api("/api/tickers"); renderPrice(); renderLists(); } catch(e){}
+}
+function renderPrice(){
+  const tk = S.tickers.find(x => x.s === S.symbol); if(!tk) return;
+  $("#pairName").textContent = base(S.symbol) + "/USDT";
+  const el = $("#price"), p = +tk.p;
+  el.textContent = fp(p);
+  if(S.lastPrice !== null && p !== S.lastPrice){
+    el.classList.remove("flash-up","flash-down"); void el.offsetWidth;
+    el.classList.add(p > S.lastPrice ? "flash-up" : "flash-down");
+    setTimeout(() => el.classList.remove("flash-up","flash-down"), 400);
+  }
+  S.lastPrice = p;
+  const c = +tk.c, ce = $("#chg");
+  ce.textContent = (c >= 0 ? "+" : "") + c.toFixed(2) + "%";
+  ce.className = "num " + (c >= 0 ? "up" : "down");
+  $("#hi").textContent = fp(tk.h); $("#lo").textContent = fp(tk.l); $("#vol").textContent = fv(tk.v);
+}
+function rowHTML(tk){
+  const c = +tk.c;
+  return `<button class="row" data-s="${esc(tk.s)}">
+    <span class="l"><b>${esc(base(tk.s))}</b><small>/USDT</small><div class="num">${esc(fv(tk.v))}</div></span>
+    <span class="r"><div class="num">${fp(tk.p)}</div>
+      <span class="chg num ${c>=0?"up":"down"}">${c>=0?"+":""}${c.toFixed(2)}%</span></span></button>`;
+}
+function listHTML(q){
+  q = q.trim().toUpperCase();
+  const arr = S.tickers.filter(x => !q || x.s.includes(q)).slice(0, 80);
+  return arr.length ? arr.map(rowHTML).join("") : `<div class="empty">${t("loading")}</div>`;
+}
+function renderLists(){
+  if(S.tab === "markets") $("#mList").innerHTML = listHTML($("#mSearch").value);
+  if($("#sheetBg").classList.contains("on")) $("#sList").innerHTML = listHTML($("#sSearch").value);
+}
+$("#mSearch").oninput = renderLists; $("#sSearch").oninput = renderLists;
+function pick(sym){
+  S.symbol = sym; localStorage.setItem("symbol", sym); S.lastPrice = null;
+  closeSheet(); renderPrice(); go("trade"); loadChart();
+}
+$("#mList").onclick = e => { const r = e.target.closest(".row"); if(r) pick(r.dataset.s); };
+$("#sList").onclick = e => { const r = e.target.closest(".row"); if(r) pick(r.dataset.s); };
+function openSheet(){ $("#sheetBg").classList.add("on"); $("#sSearch").value = ""; renderLists(); $("#sSearch").focus(); }
+function closeSheet(){ $("#sheetBg").classList.remove("on"); }
+$("#pairBtn").onclick = openSheet;
+$("#sheetBg").onclick = e => { if(e.target.id === "sheetBg") closeSheet(); };
+
+let chart;
+async function loadChart(){
+  if(S.tab !== "trade") return;
+  let k;
+  try { k = await api(`/api/klines?symbol=${encodeURIComponent(S.symbol)}&interval=${S.interval}`); }
+  catch(e){ return; }
+  if(!Array.isArray(k) || !k.length) return;
+  const closes = k.map(c => +c[4]);
+  const labels = k.map(c => {
+    const d = new Date(c[0]);
+    return S.interval === "1d"
+      ? d.toLocaleDateString("en-US",{month:"short",day:"numeric"})
+      : d.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:false});
+  });
+  const up = closes[closes.length-1] >= closes[0];
+  const col = up ? "#0ECB81" : "#F6465D";
+  if(!chart){
+    chart = new Chart($("#chart"), {
+      type: "line",
+      data: { labels, datasets: [{ data: closes, borderColor: col, backgroundColor: col+"22",
+        fill: true, borderWidth: 2, pointRadius: 0, pointHitRadius: 12, tension: .15 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: { legend: { display: false }, tooltip: { displayColors: false,
+          callbacks: { label: c => fp(c.parsed.y) } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: "#848E9C", maxTicksLimit: 5, maxRotation: 0 } },
+          y: { position: "right", grid: { color: "#2B3139" }, ticks: { color: "#848E9C", maxTicksLimit: 5 } }
+        }
+      }
+    });
+  } else {
+    const ds = chart.data.datasets[0];
+    chart.data.labels = labels; ds.data = closes; ds.borderColor = col; ds.backgroundColor = col+"22";
+    chart.update();
+  }
+}
+$("#ivSeg").onclick = e => {
+  const b = e.target.closest("button"); if(!b) return;
+  S.interval = b.dataset.iv;
+  localStorage.setItem("interval", S.interval);
+  $$("#ivSeg button").forEach(x => x.classList.toggle("on", x === b));
+  loadChart();
+};
+
+$("#quick").onclick = e => { const b = e.target.closest("button"); if(b) $("#amt").value = b.dataset.a; };
+async function order(side){
+  const amt = parseFloat($("#amt").value);
+  if(!(amt > 0)) return toast(t("need_amount"), "err");
+  if(S.state && S.state.mode === "live"){
+    const msg = t("confirm_live").replace("%s", side === "BUY" ? t("buy") : t("sell"))
+      .replace("%a", amt).replace("%p", base(S.symbol)+"/USDT");
+    if(!(await askConfirm(msg))) return;
+  }
+  const btns = [$("#buyBtn"), $("#sellBtn")]; btns.forEach(b => b.disabled = true);
+  try {
+    const r = await post("/api/order", {symbol:S.symbol, side, quote_amount:amt});
+    toast(`${t("order_ok")}: ${r.side} ${r.executedQty} ${base(r.symbol)}`, "ok");
+    if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+    S.wallet = null;
+  } catch(err){ toast(err.message, "err"); }
+  btns.forEach(b => b.disabled = false);
+}
+$("#buyBtn").onclick = () => order("BUY");
+$("#sellBtn").onclick = () => order("SELL");
+
+let donut;
+const COLORS = ["#FCD535","#0ECB81","#5B9DFF","#F6465D","#B07CFF","#FF9F43","#2DD4BF","#848E9C"];
+async function loadWallet(){
+  if(!S.state || !S.state.configured[S.state.mode]){ S.wallet = null; return renderWallet(); }
+  try { S.wallet = await api("/api/account"); renderWallet(); }
+  catch(err){ S.wallet = {error: err.message}; renderWallet(); }
+}
+function renderWallet(){
+  const box = $("#walletBody"), w = S.wallet;
+  if(donut){ donut.destroy(); donut = null; }
+  if(!w || w.error || !w.balances.length){
+    const msg = w && w.error ? esc(w.error) : (S.state && !S.state.configured[S.state.mode] ? esc(t("no_keys")) : esc(t("wallet_empty")));
+    box.innerHTML = `<div class="card empty">${msg}<br><button class="btn-main" id="toSet">${esc(t("go_settings"))}</button></div>`;
+    $("#toSet").onclick = () => go("settings"); return;
+  }
+  const top = w.balances.filter(b => b.value > 0);
+  const legend = top.slice(0,6).map((b,i) =>
+    `<div><i style="background:${COLORS[i]}"></i><span>${esc(b.asset)}</span>
+     <span class="muted num" style="margin-inline-start:auto">${w.total ? (b.value/w.total*100).toFixed(1) : 0}%</span></div>`).join("");
+  box.innerHTML = `
+    <div class="card"><div class="muted">${esc(t("total"))} · ${w.mode === "test" ? esc(t("test_short")) : esc(t("live_short"))}</div>
+      <div class="total num">$${money(w.total)}</div></div>
+    <div class="card"><h2>${esc(t("dist"))}</h2>
+      <div class="donutwrap"><div class="cv"><canvas id="donut"></canvas></div><div class="legend">${legend}</div></div></div>
+    <div class="card" style="padding:4px 14px">${w.balances.map(b => `
+      <div class="row"><span class="l"><b>${esc(b.asset)}</b>
+        <div>${esc(t("free"))} <span class="num">${+b.free.toFixed(8)}</span>${b.locked ? ` · ${esc(t("locked"))} <span class="num">${+b.locked.toFixed(8)}</span>` : ""}</div></span>
+        <span class="r num">$${money(b.value)}</span></div>`).join("")}</div>`;
+  if(top.length){
+    donut = new Chart($("#donut"), { type:"doughnut",
+      data:{ labels: top.map(b=>b.asset), datasets:[{ data: top.map(b=>b.value),
+        backgroundColor: top.map((_,i)=>COLORS[i % COLORS.length]), borderColor:"#181A20", borderWidth:2 }] },
+      options:{ cutout:"68%", plugins:{legend:{display:false}}, animation:false } });
+  }
+}
+
+(async function init(){
+  renderProfile();
+  $$("#ivSeg button").forEach(x => x.classList.toggle("on", x.dataset.iv === S.interval));
+  applyLang();
+  try { await loadState(); } catch(e){ toast(e.message, "err"); }
+  loadTickers(); loadChart();
+  setInterval(loadTickers, 6000);
+  setInterval(loadChart, 20000);
+  setInterval(() => { if(S.tab === "wallet") loadWallet(); }, 25000);
+})();
+</script>
+
+<!--PYTHON_SERVER
+import os
+import re
+import json
+import time
+import hmac
+import hashlib
+import threading
+from decimal import Decimal, InvalidOperation
+from urllib.parse import urlencode
+
+import requests
+from flask import Flask, jsonify, request, Response
+
+BASE_DIR = os.getcwd()
+HTML_PATH = os.path.join(BASE_DIR, "index.html")
+KEYS_FILE = os.path.join(BASE_DIR, "keys.json")
+LOCK = threading.Lock()
+_cache_lock = threading.Lock()
+
+# ===== الإعدادات =====
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8661997948:AAH8Xsq141EirxRhBRk1ljL8B2JtIfBDguc")
+OWNER_ID = int(os.environ.get("OWNER_ID", "7168766467"))
+SITE_URL = os.environ.get("SITE_URL", "")
+HOST = os.environ.get("HOST", "0.0.0.0")
+PORT = int(os.environ.get("PORT", "5000"))
+
+BASES = {"test": "https://testnet.binance.vision", "live": "https://api.binance.com"}
+PUBLIC_BASE = "https://api.binance.com"
+SYMBOL_RE = re.compile(r"^[A-Z0-9]{5,20}$")
+INTERVALS = {"1m", "5m", "15m", "1h", "4h", "1d"}
+
+app = Flask(__name__)
+
+# ===== تخزين المفاتيح =====
+def _empty_state():
+    return {"mode": "test", "test": {"key": "", "secret": ""}, "live": {"key": "", "secret": ""}}
+
+def load_state():
+    with LOCK:
+        if not os.path.exists(KEYS_FILE):
+            return _empty_state()
+        try:
+            with open(KEYS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            st = _empty_state()
+            st.update({k: data[k] for k in ("mode", "test", "live") if k in data})
+            return st
+        except (OSError, ValueError):
+            return _empty_state()
+
+def save_state(st):
+    with LOCK:
+        with open(KEYS_FILE, "w", encoding="utf-8") as f:
+            json.dump(st, f)
+        try: os.chmod(KEYS_FILE, 0o600)
+        except OSError: pass
+
+# ===== Binance =====
+class ApiError(Exception):
+    def __init__(self, message, status=400, code="error"):
+        super().__init__(message)
+        self.message, self.status, self.code = message, status, code
+
+def binance_public(path, params=None):
+    try:
+        r = requests.get(PUBLIC_BASE + path, params=params or {}, timeout=10)
+        data = r.json()
+    except (requests.RequestException, ValueError):
+        raise ApiError("Cannot reach Binance", 502, "network")
+    if r.status_code != 200:
+        raise ApiError(data.get("msg", "Binance error"), r.status_code)
+    return data
+
+def binance_signed(method, path, params, key, secret, base):
+    if not key or not secret:
+        raise ApiError("API keys are not set for this mode", 400, "no_keys")
+    p = dict(params or {})
+    p["timestamp"] = int(time.time() * 1000)
+    p["recvWindow"] = 10000
+    qs = urlencode(p)
+    sig = hmac.new(secret.encode(), qs.encode(), hashlib.sha256).hexdigest()
+    try:
+        r = requests.request(method, base + path + "?" + qs + "&signature=" + sig,
+                             headers={"X-MBX-APIKEY": key}, timeout=10)
+        data = r.json()
+    except (requests.RequestException, ValueError):
+        raise ApiError("Cannot reach Binance", 502, "network")
+    if r.status_code != 200:
+        raise ApiError(data.get("msg", "Binance error"), r.status_code, "binance")
+    return data
+
+def active_creds():
+    st = load_state()
+    mode = st["mode"] if st["mode"] in BASES else "test"
+    return mode, st[mode].get("key", ""), st[mode].get("secret", "")
+
+_cache = {}
+
+def cached(name, ttl, fn):
+    now = time.time()
+    with _cache_lock:
+        hit = _cache.get(name)
+        if hit and now - hit[0] < ttl:
+            return hit[1]
+    val = fn()
+    with _cache_lock:
+        _cache[name] = (now, val)
+    return val
+
+def account_summary():
+    mode, key, secret = active_creds()
+    acc = binance_signed("GET", "/api/v3/account", {}, key, secret, BASES[mode])
+    prices = {p["symbol"]: float(p["price"]) for p in cached(
+        "prices", 5, lambda: binance_public("/api/v3/ticker/price"))}
+    rows, total = [], 0.0
+    for b in acc.get("balances", []):
+        free, locked = float(b["free"]), float(b["locked"])
+        if free + locked <= 0: continue
+        asset = b["asset"]
+        price = 1.0 if asset in ("USDT","USDC","FDUSD","BUSD") else prices.get(asset + "USDT", 0.0)
+        value = (free + locked) * price
+        total += value
+        rows.append({"asset": asset, "free": free, "locked": locked, "value": value})
+    rows.sort(key=lambda r: r["value"], reverse=True)
+    return {"mode": mode, "total": total, "balances": rows}
+
+# ===== CORS =====
+@app.after_request
+def cors(resp):
+    origin = request.headers.get("Origin", "")
+    resp.headers["Access-Control-Allow-Origin"] = origin or "*"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Init-Data"
+    resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    resp.headers["Vary"] = "Origin"
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+@app.errorhandler(ApiError)
+def handle_api_error(e):
+    return jsonify({"error": e.message, "code": e.code}), e.status
+
+@app.route("/")
+def index():
+    with open(HTML_PATH, "r", encoding="utf-8") as f:
+        html = f.read()
+    html = re.sub(r"<!--PYTHON_SERVER.*?PYTHON_SERVER-->", "", html, flags=re.S)
+    return Response(html, mimetype="text/html")
+
+# ===== المسارات =====
+def state_public():
+    st = load_state()
+    hint = lambda k: ("••••" + k[-4:]) if len(k) >= 4 else ""
+    return {"mode": st["mode"],
+            "configured": {m: bool(st[m]["key"] and st[m]["secret"]) for m in ("test","live")},
+            "hints": {m: hint(st[m]["key"]) for m in ("test","live")}}
+
+@app.route("/api/state")
+def api_state(): return jsonify(state_public())
+
+@app.route("/api/mode", methods=["POST"])
+def api_mode():
+    mode = (request.get_json(silent=True) or {}).get("mode")
+    if mode not in BASES: raise ApiError("Invalid mode")
+    st = load_state(); st["mode"] = mode; save_state(st)
+    with _cache_lock: _cache.clear()
+    return jsonify(state_public())
+
+@app.route("/api/keys", methods=["POST"])
+def api_keys():
+    body = request.get_json(silent=True) or {}
+    mode = body.get("mode")
+    key = str(body.get("key", "")).strip()
+    secret = str(body.get("secret", "")).strip()
+    if mode not in BASES: raise ApiError("Invalid mode")
+    if not key or not secret: raise ApiError("Key and secret are required", 400, "missing")
+    binance_signed("GET", "/api/v3/account", {}, key, secret, BASES[mode])
+    st = load_state()
+    st[mode] = {"key": key, "secret": secret}
+    st["mode"] = mode
+    save_state(st)
+    with _cache_lock: _cache.clear()
+    return jsonify(state_public())
+
+@app.route("/api/tickers")
+def api_tickers():
+    def fetch():
+        out = []
+        for t in binance_public("/api/v3/ticker/24hr"):
+            s = t.get("symbol", "")
+            if not s.endswith("USDT") or float(t.get("quoteVolume", 0) or 0) <= 0: continue
+            out.append({"s": s, "p": t["lastPrice"], "c": t["priceChangePercent"],
+                        "h": t["highPrice"], "l": t["lowPrice"], "v": t["quoteVolume"]})
+        out.sort(key=lambda x: float(x["v"]), reverse=True)
+        return out
+    return jsonify(cached("tickers", 3, fetch))
+
+@app.route("/api/klines")
+def api_klines():
+    symbol = request.args.get("symbol", "BTCUSDT").upper()
+    interval = request.args.get("interval", "15m")
+    if not SYMBOL_RE.match(symbol) or interval not in INTERVALS:
+        raise ApiError("Invalid parameters")
+    data = binance_public("/api/v3/klines", {"symbol": symbol, "interval": interval, "limit": 100})
+    return jsonify([[c[0],c[1],c[2],c[3],c[4],c[5]] for c in data])
+
+@app.route("/api/account")
+def api_account(): return jsonify(account_summary())
+
+@app.route("/api/order", methods=["POST"])
+def api_order():
+    body = request.get_json(silent=True) or {}
+    symbol = str(body.get("symbol", "")).upper()
+    side = str(body.get("side", "")).upper()
+    if not SYMBOL_RE.match(symbol) or side not in ("BUY","SELL"):
+        raise ApiError("Invalid order")
+    try: amount = Decimal(str(body.get("quote_amount")))
+    except (InvalidOperation, TypeError): raise ApiError("Invalid amount")
+    if amount <= 0: raise ApiError("Invalid amount")
+    mode, key, secret = active_creds()
+    res = binance_signed("POST", "/api/v3/order", {
+        "symbol": symbol, "side": side, "type": "MARKET",
+        "quoteOrderQty": format(amount, "f")}, key, secret, BASES[mode])
+    return jsonify({"mode": mode, "orderId": res.get("orderId"), "symbol": res.get("symbol"),
+                    "side": res.get("side"), "status": res.get("status"),
+                    "executedQty": res.get("executedQty"), "quoteQty": res.get("cummulativeQuoteQty")})
+
+# ===== بوت تيليجرام =====
+TG_API = "https://api.telegram.org/bot" + BOT_TOKEN
+
+def tg(method, **params):
+    try: return requests.post(TG_API + "/" + method, json=params, timeout=45).json()
+    except (requests.RequestException, ValueError) as e:
+        print("tg error [" + method + "]:", e)
+        return {}
+
+def send(chat_id, text, markup=None):
+    limit = 4000
+    chunks = [text[i:i+limit] for i in range(0, len(text), limit)] or [""]
+    for i, chunk in enumerate(chunks):
+        p = {"chat_id": chat_id, "text": chunk}
+        if markup and i == len(chunks) - 1: p["reply_markup"] = markup
+        tg("sendMessage", **p)
+
+def app_button():
+    if not SITE_URL or not SITE_URL.startswith("https://"):
+        return None
+    return {"inline_keyboard": [[{"text": "📈 فتح التداول", "web_app": {"url": SITE_URL}}]]}
+
+def handle(msg):
+    global SITE_URL
+    chat_id = msg["chat"]["id"]
+    uid = msg["from"]["id"]
+    parts = (msg.get("text") or "").strip().split()
+    cmd = parts[0].split("@")[0].lower() if parts else ""
+
+    if cmd == "/id": return send(chat_id, "معرّفك: " + str(uid))
+    if uid != OWNER_ID:
+        return send(chat_id, "غير مصرح لك باستخدام هذا البوت.\nمعرّفك: " + str(uid))
+
+    if cmd in ("/start", "/app"):
+        send(chat_id,
+             "أهلاً بك 👋\n"
+             "افتح التطبيق من زر القائمة أسفل الشاشة.\n\n"
+             "الأوامر:\n"
+             "/price BTC — سعر عملة\n"
+             "/balance — الرصيد\n"
+             "/mode — النمط الحالي\n"
+             "/seturl <url> — تحديث رابط التطبيق",
+             app_button())
+    elif cmd == "/seturl":
+        if len(parts) < 2 or not parts[1].startswith("https://"):
+            return send(chat_id, "أرسل: /seturl https://your-app-url.com")
+        SITE_URL = parts[1].rstrip("/")
+        tg("setChatMenuButton", menu_button={"type": "web_app", "text": "التداول", "web_app": {"url": SITE_URL}})
+        send(chat_id, "✅ تم تحديث الرابط:\n" + SITE_URL, app_button())
+    elif cmd == "/price":
+        sym = (parts[1] if len(parts) > 1 else "BTC").upper()
+        sym = sym if sym.endswith("USDT") else sym + "USDT"
+        try:
+            t = binance_public("/api/v3/ticker/24hr", {"symbol": sym})
+            send(chat_id, "%s\nالسعر: %g\nالتغير 24س: %+.2f%%" % (sym, float(t["lastPrice"]), float(t["priceChangePercent"])))
+        except ApiError as e: send(chat_id, "تعذّر جلب السعر: " + e.message)
+    elif cmd == "/balance":
+        try:
+            s = account_summary()
+            top = "\n".join("%s: %g" % (b["asset"], b["free"] + b["locked"]) for b in s["balances"][:8])
+            send(chat_id, "النمط: %s\nالإجمالي: $%s\n%s" % (
+                "تجريبي" if s["mode"] == "test" else "حقيقي", format(s["total"], ",.2f"), top))
+        except ApiError as e:
+            send(chat_id, "أضف المفاتيح أولاً من التطبيق." if e.code == "no_keys" else "خطأ: " + e.message)
+    elif cmd == "/mode":
+        st = state_public()
+        send(chat_id, "النمط الحالي: %s\nمفاتيح تجريبي: %s\nمفاتيح حقيقي: %s" % (
+            "تجريبي" if st["mode"] == "test" else "حقيقي",
+            "✅" if st["configured"]["test"] else "❌",
+            "✅" if st["configured"]["live"] else "❌"))
+    else:
+        send(chat_id, "أرسل /start لعرض الأوامر.")
+
+def poll_loop():
+    tg("deleteWebhook")
+    if SITE_URL and SITE_URL.startswith("https://"):
+        tg("setChatMenuButton", menu_button={"type": "web_app", "text": "التداول", "web_app": {"url": SITE_URL}})
+    offset = None
+    while True:
+        res = tg("getUpdates", offset=offset, timeout=30, allowed_updates=["message"])
+        if not res.get("ok"):
+            time.sleep(3); continue
+        for u in res.get("result", []):
+            offset = u["update_id"] + 1
+            if "message" in u:
+                try: handle(u["message"])
+                except Exception as e: print("handler error:", e)
+
+threading.Thread(target=poll_loop, daemon=True).start()
+print("=" * 60)
+print("Bot started.")
+print("Server: http://%s:%s" % (HOST, PORT))
+print("Site URL: %s" % (SITE_URL or "(not set - use /seturl in the bot)"))
+print("=" * 60)
+app.run(host=HOST, port=PORT, debug=False, threaded=True, use_reloader=False)
+PYTHON_SERVER-->
+</body>
+</html>
